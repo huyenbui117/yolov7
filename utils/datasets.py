@@ -395,6 +395,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         else:
             cache, exists = self.cache_labels(cache_path, prefix), False  # cache
 
+        
         # Display cache
         nf, nm, ne, nc, n = cache.pop('results')  # found, missing, empty, corrupted, total
         if exists:
@@ -504,6 +505,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     nm += 1  # label missing
                     l = np.zeros((0, 5), dtype=np.float32)
                 x[im_file] = [l, shape, segments]
+                
             except Exception as e:
                 nc += 1
                 print(f'{prefix}WARNING: Ignoring corrupted image and/or label {im_file}: {e}')
