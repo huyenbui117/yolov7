@@ -8,6 +8,9 @@ import tqdm
 import glob 
 import argparse
 import json
+from skimage.segmentation import find_boundaries
+import numpy as np
+
 WHITE_PIXEL = torch.tensor([253, 231, 36, 255])
 BLACK_PIXEL = torch.tensor([68, 1, 84, 255])
 MAX_WIDTH, MAX_HEIGHT = 1728, 960
@@ -80,13 +83,17 @@ def calculate_bboxes(imgs: torch.Tensor, loosen_amount: float = 0.03):
             # bboxes.append(torch.stack((r0, c0, r1, c1)))
             bboxes.append(torch.stack((c_center, r_center, w, h)))
         return bboxes
-# img_path = "lightning-hydra-template/data/baby/train/images/56_1B_0001_1.png"
-# img_path = "lightning-hydra-template/data/baby/test/images/1B_0001.png"
-# label_path = "lightning-hydra-template/data/baby/test/label/1B_0001.png"
-# img_path = "lightning-hydra-template/data/baby/test/images/04062021-090318_20210621145827_1.png"
-# label_path = "lightning-hydra-template/data/baby/test/label/04062021-090318_20210621145827_1.png"
-# label_tensor = read_label(label_path)
-def convert(path, loosen_amount):
+def get_boundary(imgs: torch.Tensor):
+    '''
+    Return the boundary of the image
+    - imgs: input tensor (b x h x w)
+    Return:
+    - boundary: (n x y x x) tensor - boundary of the image
+    '''
+    boundary_tensor = torch.tensor(find_boundaries(imgs[0]).astype(np.uint8))
+    boundary = torch.div(torch.nonzero(boundary_tensor), torch.tensor(boundary_tensor[0].size()))
+    return boundary
+def convert(path, loosen_amount, segment):
     task = path.split("/")[-1]
     # print(task)
     in_paths = glob.glob(os.path.join(path, "label/*"))
@@ -102,19 +109,22 @@ def convert(path, loosen_amount):
         os.mkdir(os.path.join(path, "labels"))
     for in_path in tqdm.tqdm(in_paths, desc=f"Converting {task} labels"):
         label_tensor = read_label(in_path)
-        bboxes = calculate_bboxes(label_tensor, loosen_amount)
         out_path = os.path.join(path, "labels", os.path.basename(in_path).replace(".png", ".txt"))
-        # print(out_path)
-        with open(out_path, "w") as f:
-            for bbox in bboxes:
+        if not segment:
+            bboxes = calculate_bboxes(label_tensor, loosen_amount)
+            with open(out_path, "w") as f:
+                for bbox in bboxes:
+                    f.write("0 ")
+                    f.write(" ".join([str(x.item()) for x in bbox]))
+                    f.write("\n")
+        else:
+            boundary = get_boundary(label_tensor)
+            # print(boundary)
+            with open(out_path, "w") as f:
                 f.write("0 ")
-                f.write(" ".join([str(x.item()) for x in bbox]))
-                f.write("\n")
-    # label_tensor = read_label(label_path)
-    # print(label_tensor.shape)
-    # bboxes = calculate_bboxes(label_tensor)
-    # print(bboxes)
-    pass
+                for y,x in boundary:
+                    f.write(" ".join([str(x.item()), str(y.item())]))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default = 'cfg/custom/config.json',help="Path to config file")
@@ -122,7 +132,7 @@ def main():
     with open(args.config, "r") as f:
         config = json.load(f)
         for path in config["data_paths"]:
-            convert(config["data_paths"][path], config["loosen_amount"])
+            convert(config["data_paths"][path], config["loosen_amount"], config["segment"])
     # convert('../data/baby_small/train')
 if __name__== '__main__':
     main()
