@@ -81,7 +81,7 @@ def test(data,
     # Logging
     log_imgs = 0
     if wandb_logger and wandb_logger.wandb:
-        log_imgs = min(wandb_logger.log_imgs, 100)
+        log_imgs = min(wandb_logger.log_imgs, 1000)
     # Dataloader
     if not training:
         if device.type != 'cpu':
@@ -212,7 +212,7 @@ def test(data,
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
 
         # Plot images
-        if plots and batch_i < 3:
+        if plots:
             f = save_dir / f'test_batch{batch_i}_labels.jpg'  # labels
             Thread(target=plot_images, args=(img, targets, paths, f, names), daemon=True).start()
             f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions

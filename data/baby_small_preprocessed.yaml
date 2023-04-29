@@ -1,12 +1,12 @@
 # train and val data as 1) directory: path/images/",  "2) file: path/images.txt",  "or 3) list: [path1/images/",  "path2/images/]
-train: ../data/baby/train.txt  # 8367 images
+train: ../data/baby_small_preprocessed/train.txt  # 8367 images
 # val: ./vaipe_exif/val.txt  # 1000 images
-val: ../data/baby/val.txt # 1000 images
-test: ../data/baby/test.txt # 1500 images
+val: ../data/baby_small_preprocessed/val.txt # 1000 images
+test: ../data/baby_small_preprocessed/test.txt # 1500 images
 
 # number of classes
-nc: 2
+nc: 1
 
 # class names
-names: ['0','1']
+names: ["0"]
         
